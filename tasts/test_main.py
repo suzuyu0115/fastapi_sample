@@ -1,4 +1,5 @@
 import pytest
+import starlette.status
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -28,3 +29,18 @@ async def async_client() -> AsyncClient:
 
   async with AsyncClient(app=app, base_url="http://test") as client:
     yield client
+
+
+@pytest.mark.asyncio
+async def test_create_and_read(async_client):
+  response = await async_client.post("/tasks", json={"title": "テストタスク"})
+  assert response.status_code == starlette.status.HTTP_200_OK
+  response_obj = response.json()
+  assert response_obj["title"] == "テストタスク"
+
+  response = await async_client.get("/tasks")
+  assert response.status_code == starlette.status.HTTP_200_OK
+  response_obj = response.json()
+  assert len(response_obj) == 1
+  assert response_obj[0]["title"] == "テストタスク"
+  assert response_obj[0]["done"] is False
